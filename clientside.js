@@ -133,8 +133,74 @@
             // Give user a moment to see completion
             await sleep(500);
 
-            // Redirect to AutoZone with VIN parameter
-            window.location.href = `https://www.autozone.com/vin-decoder?vin=${encodeURIComponent(vin)}`;
+            // Store VIN in sessionStorage for use on AutoZone page
+            try {
+                sessionStorage.setItem('autozone_vin', vin);
+                sessionStorage.setItem('autozone_vin_year', year || '');
+                sessionStorage.setItem('autozone_vin_make', make || '');
+                sessionStorage.setItem('autozone_vin_model', model || '');
+            } catch (e) {
+                console.log('Could not store in sessionStorage');
+            }
+
+            // Instead of redirecting, open AutoZone in a way that we can interact with it
+            // We'll open a new window and inject the VIN
+            statusText.innerHTML = `
+                <strong style="color: #22c55e;">Ready to go!</strong><br><br>
+                <div style="background: rgba(255, 119, 0, 0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div style="color: #ff7700; font-weight: bold; margin-bottom: 10px;">
+                        📋 Your VIN: ${vin}
+                    </div>
+                    <div style="color: #cbd5e1; font-size: 14px;">
+                        Click the button below to open AutoZone.<br>
+                        The VIN will be copied to your clipboard.
+                    </div>
+                </div>
+            `;
+
+            // Copy VIN to clipboard
+            try {
+                await navigator.clipboard.writeText(vin);
+                console.log('VIN copied to clipboard');
+            } catch (e) {
+                console.log('Could not copy to clipboard');
+            }
+
+            // Create button to open AutoZone
+            const openButton = document.createElement('button');
+            openButton.textContent = '🚗 Open AutoZone & Paste VIN';
+            openButton.style.cssText = `
+                background: linear-gradient(135deg, #ff7700 0%, #ff5500 100%);
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                border-radius: 10px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-top: 15px;
+                box-shadow: 0 4px 15px rgba(255, 119, 0, 0.4);
+                transition: transform 0.2s;
+            `;
+            openButton.onmouseover = () => openButton.style.transform = 'translateY(-2px)';
+            openButton.onmouseout = () => openButton.style.transform = 'translateY(0)';
+            openButton.onclick = () => {
+                // Open AutoZone VIN decoder
+                window.open('https://www.autozone.com/vin-decoder', '_blank');
+                
+                // Update status
+                statusText.innerHTML += `
+                    <div style="color: #22c55e; font-size: 14px; margin-top: 15px;">
+                        ✓ AutoZone opened!<br>
+                        <span style="color: #94a3b8;">Paste (Ctrl+V) your VIN in the form</span>
+                    </div>
+                `;
+            };
+
+            spinner.style.display = 'none';
+            statusText.appendChild(openButton);
+
+            return; // Don't auto-redirect
 
         } catch (error) {
             console.error('Error processing VIN:', error);
