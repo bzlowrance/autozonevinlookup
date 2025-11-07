@@ -133,74 +133,156 @@
             // Give user a moment to see completion
             await sleep(500);
 
-            // Store VIN in sessionStorage for use on AutoZone page
-            try {
-                sessionStorage.setItem('autozone_vin', vin);
-                sessionStorage.setItem('autozone_vin_year', year || '');
-                sessionStorage.setItem('autozone_vin_make', make || '');
-                sessionStorage.setItem('autozone_vin_model', model || '');
-            } catch (e) {
-                console.log('Could not store in sessionStorage');
-            }
-
-            // Instead of redirecting, open AutoZone in a way that we can interact with it
-            // We'll open a new window and inject the VIN
+            // Open AutoZone in a new window that we can control
             statusText.innerHTML = `
-                <strong style="color: #22c55e;">Ready to go!</strong><br><br>
-                <div style="background: rgba(255, 119, 0, 0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
-                    <div style="color: #ff7700; font-weight: bold; margin-bottom: 10px;">
-                        📋 Your VIN: ${vin}
-                    </div>
-                    <div style="color: #cbd5e1; font-size: 14px;">
-                        Click the button below to open AutoZone.<br>
-                        The VIN will be copied to your clipboard.
-                    </div>
+                <strong style="color: #22c55e;">Opening AutoZone...</strong><br><br>
+                <div style="color: #cbd5e1; font-size: 14px;">
+                    Automatically filling in your VIN
                 </div>
             `;
 
-            // Copy VIN to clipboard
-            try {
-                await navigator.clipboard.writeText(vin);
-                console.log('VIN copied to clipboard');
-            } catch (e) {
-                console.log('Could not copy to clipboard');
-            }
+            spinner.style.display = 'none';
 
-            // Create button to open AutoZone
-            const openButton = document.createElement('button');
-            openButton.textContent = '🚗 Open AutoZone & Paste VIN';
-            openButton.style.cssText = `
-                background: linear-gradient(135deg, #ff7700 0%, #ff5500 100%);
-                color: white;
-                border: none;
-                padding: 15px 30px;
-                border-radius: 10px;
-                font-size: 16px;
-                font-weight: bold;
-                cursor: pointer;
-                margin-top: 15px;
-                box-shadow: 0 4px 15px rgba(255, 119, 0, 0.4);
-                transition: transform 0.2s;
-            `;
-            openButton.onmouseover = () => openButton.style.transform = 'translateY(-2px)';
-            openButton.onmouseout = () => openButton.style.transform = 'translateY(0)';
-            openButton.onclick = () => {
-                // Open AutoZone VIN decoder
-                window.open('https://www.autozone.com/vin-decoder', '_blank');
-                
-                // Update status
-                statusText.innerHTML += `
-                    <div style="color: #22c55e; font-size: 14px; margin-top: 15px;">
-                        ✓ AutoZone opened!<br>
-                        <span style="color: #94a3b8;">Paste (Ctrl+V) your VIN in the form</span>
+            await sleep(1000);
+
+            // Open AutoZone with a script that will auto-fill the VIN
+            const autoZoneWindow = window.open('about:blank', '_blank');
+            
+            if (!autoZoneWindow) {
+                // Popup blocked
+                statusText.innerHTML = `
+                    <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px;">
+                        <strong style="color: #ff5555;">⚠️ Popup Blocked</strong><br><br>
+                        <div style="color: #cbd5e1; font-size: 14px; margin-bottom: 15px;">
+                            Please allow popups for this site, then click the button below.
+                        </div>
+                        <button onclick="window.open('https://www.autozone.com/vin-decoder?vin=${encodeURIComponent(vin)}', '_blank')" 
+                                style="background: #ff7700; color: white; border: none; padding: 12px 24px; 
+                                       border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            Open AutoZone
+                        </button>
                     </div>
                 `;
-            };
+                return;
+            }
 
-            spinner.style.display = 'none';
-            statusText.appendChild(openButton);
+            // Create an HTML page that will redirect and auto-fill
+            autoZoneWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Loading AutoZone...</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                            color: white;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            min-height: 100vh;
+                        }
+                        .loader {
+                            text-align: center;
+                        }
+                        .spinner {
+                            border: 4px solid rgba(255, 255, 255, 0.1);
+                            border-top: 4px solid #ff7700;
+                            border-radius: 50%;
+                            width: 50px;
+                            height: 50px;
+                            animation: spin 1s linear infinite;
+                            margin: 0 auto 20px;
+                        }
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                        h2 { margin: 0 0 10px 0; }
+                        p { color: #94a3b8; }
+                        .vin {
+                            background: rgba(255, 119, 0, 0.2);
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            margin: 15px 0;
+                            font-family: monospace;
+                            font-size: 18px;
+                            letter-spacing: 2px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="loader">
+                        <div class="spinner"></div>
+                        <h2>Opening AutoZone</h2>
+                        <div class="vin">${vin}</div>
+                        <p>Please wait...</p>
+                    </div>
+                    <script>
+                        const VIN = '${vin}';
+                        
+                        // Wait a moment, then redirect
+                        setTimeout(() => {
+                            // Navigate to AutoZone with VIN in URL
+                            window.location.href = 'https://www.autozone.com/vin-decoder?vin=' + encodeURIComponent(VIN);
+                            
+                            // Try to auto-fill the form after page loads
+                            window.addEventListener('load', () => {
+                                setTimeout(() => {
+                                    try {
+                                        // Try to find and fill VIN input field
+                                        const vinInputs = [
+                                            document.querySelector('input[name="vin"]'),
+                                            document.querySelector('input[type="text"][placeholder*="VIN"]'),
+                                            document.querySelector('input[id*="vin"]'),
+                                            document.querySelector('input.vin-input'),
+                                            ...document.querySelectorAll('input[type="text"]')
+                                        ].filter(Boolean);
+                                        
+                                        for (const input of vinInputs) {
+                                            if (input && input.offsetParent !== null) {
+                                                input.value = VIN;
+                                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                                                input.dispatchEvent(new Event('change', { bubbles: true }));
+                                                
+                                                // Try to find and click submit button
+                                                const form = input.closest('form');
+                                                if (form) {
+                                                    const submitBtn = form.querySelector('button[type="submit"]') || 
+                                                                     form.querySelector('input[type="submit"]') ||
+                                                                     form.querySelector('button');
+                                                    if (submitBtn) {
+                                                        setTimeout(() => submitBtn.click(), 500);
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    } catch (e) {
+                                        console.error('Could not auto-fill VIN:', e);
+                                    }
+                                }, 2000);
+                            });
+                        }, 1500);
+                    </script>
+                </body>
+                </html>
+            `);
+            autoZoneWindow.document.close();
 
-            return; // Don't auto-redirect
+            // Update our page
+            statusText.innerHTML = `
+                <div style="color: #22c55e; margin-top: 20px;">
+                    ✓ AutoZone opened in new window<br>
+                    <span style="color: #94a3b8; font-size: 14px;">
+                        VIN should auto-fill automatically
+                    </span>
+                </div>
+            `;
+
+            return;
 
         } catch (error) {
             console.error('Error processing VIN:', error);
