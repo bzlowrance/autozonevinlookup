@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoZone VIN Lookup - Mark The Mobile Mechanic</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 
+                        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(255, 119, 0, 0.5));
+        }
+
+        h1 {
+            color: #f1f5f9;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 30px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .vin-display {
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(255, 119, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .vin-display::before {
+            content: 'VEHICLE IDENTIFICATION NUMBER';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #1e293b;
+            padding: 0 10px;
+            font-size: 10px;
+            color: #ff7700;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .vin-text {
+            font-family: 'Courier New', monospace;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ff7700;
+            letter-spacing: 3px;
+            word-break: break-all;
+            text-shadow: 0 0 10px rgba(255, 119, 0, 0.3);
+        }
+
+        .vehicle-info {
+            background: linear-gradient(135deg, #ff7700 0%, #ff5500 100%);
+            color: #0f172a;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(255, 119, 0, 0.3);
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #ff7700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            color: #cbd5e1;
+            font-size: 16px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .steps {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        .step {
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border-left: 3px solid rgba(148, 163, 184, 0.3);
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .step.active {
+            background: rgba(255, 119, 0, 0.1);
+            border-left-color: #ff7700;
+            color: #ff7700;
+            font-weight: 600;
+        }
+
+        .step.complete {
+            background: rgba(34, 197, 94, 0.1);
+            border-left-color: #22c55e;
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .step::before {
+            content: '○';
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .step.active::before {
+            content: '◉';
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .step.complete::before {
+            content: '✓';
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .error strong {
+            color: #ff5555;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 30px 20px;
+            }
+
+            .logo {
+                font-size: 48px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .vin-text {
+                font-size: 16px;
+                letter-spacing: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔧</div>
+        <h1>AutoZone Parts Lookup</h1>
+        <div class="brand">Mark The Mobile Mechanic</div>
+
+        <div id="vin-container"></div>
+        <div id="vehicle-container"></div>
+
+        <div class="spinner" id="spinner"></div>
+
+        <div class="steps" id="steps">
+            <div class="step active" id="step1">Decoding VIN</div>
+            <div class="step" id="step2">Loading AutoZone</div>
+            <div class="step" id="step3">Populating VIN form</div>
+            <div class="step" id="step4">Submitting to AutoZone</div>
+        </div>
+
+        <div class="status" id="status">Initializing...</div>
+
+        <div id="error-container"></div>
+    </div>
+
+    <script src="clientside.js"></script>
+</body>
+</html>
